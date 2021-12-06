@@ -1,0 +1,105 @@
+-- Some comment at the top
+
+SET CURRENT SCHEMA = 'DB2TEST';
+SET CURRENT PATH = 'DB2TEST';
+
+CREATE TABLE "TEST" (
+			  "OBJ_ID" 			BIGINT NOT NULL,
+			  "TEXT"		    VARCHAR(30),
+			  "IS_TEXT_NULL" 	INTEGER NOT NULL DEFAULT 1);
+
+COMMENT ON TABLE "TEST" IS 'Test table';
+
+
+ALTER TABLE "TEST" ADD CONSTRAINT TEST_PK PRIMARY KEY ("OBJ_ID");
+
+-- Define this operational data table as volatile
+ALTER TABLE TEST VOLATILE CARDINALITY;
+
+-- Creates index for the test table.
+CREATE INDEX "TEST_IDX"
+	ON "TEST" (
+		"TEXT" ASC)
+	MINPCTUSED 0
+	ALLOW REVERSE SCANS
+	PAGE SPLIT SYMMETRIC
+	COMPRESS NO;
+
+create sequence TEST_SEQ start with 1;
+
+CREATE TABLE "TEST_HISTORY" (
+			  "OBJ_ID" 			BIGINT NOT NULL,
+			  "UPDATED_TS"      DATE NOT NULL,
+			  "TEXT"		    VARCHAR(30),
+			  "IS_TEXT_NULL" 	INTEGER NOT NULL DEFAULT 1);
+
+-- Trigger to update transmission summary according to specific PT status.
+--#SET TERMINATOR @
+CREATE OR REPLACE TRIGGER "TEST_PT_1"
+    BEFORE INSERT ON "TEST"
+    REFERENCING NEW AS n
+    FOR EACH ROW
+    BEGIN ATOMIC
+        set n.OBJ_ID = nvl(n.OBJ_ID, nextval for TEST_SEQ);
+    END@
+
+
+-- Trigger to copy new text to old text
+--#SET TERMINATOR ;
+CREATE OR REPLACE TRIGGER "TEST_PT_2"
+  	AFTER UPDATE OF "TEXT" ON "TEST"
+  	REFERENCING NEW AS N
+  	FOR EACH ROW
+  	WHEN (N.TEXT IS NOT NULL)
+	INSERT INTO "TEST_HISTORY" ("OBJ_ID", "UPDATED_TS", "TEXT", "IS_TEXT_NULL") VALUES (n.obj_id, CURRENT_DATE, n.text, n.is_text_null);
+
+
+-- Another trigger
+--#SET TERMINATOR @
+CREATE PROCEDURE TEST_PROC (
+  IN OBJ_ID BIGINT,
+  IN TEXT VARCHAR(30)
+)
+BEGIN
+
+ IF NOT EXISTS
+  (SELECT *
+   FROM "TEST"
+   WHERE "OBJ_ID" = TEST_PROC.OBJ_ID
+  )
+ THEN
+  INSERT
+  INTO "TEST"
+  ("OBJ_ID","TEXT")
+  VALUES
+  (TEST_PROC.OBJ_ID, TEST_PROC.TEXT);
+ ELSE
+  UPDATE "TEST"
+  SET "TEXT" = TEST_PROC.TEXT
+   WHERE "OBJ_ID" = TEST_PROC.OBJ_ID;
+ END IF;
+END
+@
+
+--#SET TERMINATOR ;
+SET CURRENT SCHEMA = 'DB2TEST';
+
+CREATE OR REPLACE PROCEDURE ANOTHER_PROC(IN dummy INT)
+DYNAMIC RESULT SETS 1
+
+-- Surprisingly, DB2 seems to accept this and handle it correctly
+-- even when it comes in the middle of some SQL
+--#SET TERMINATOR @
+P1: BEGIN ATOMIC
+
+    BEGIN
+        DECLARE c1 CURSOR WITH RETURN TO CLIENT FOR SELECT * FROM TEST;
+        OPEN c1;
+    END;
+END P1@
+
+--
+--#SET TERMINATOR ;
+SET CURRENT SCHEMA = 'DB2TEST';
+
+--- End ---

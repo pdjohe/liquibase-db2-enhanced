@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:db2="http://www.liquibase.org/xml/ns/dbchangelog-ext/db2-enhanced"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd
+                            http://www.liquibase.org/xml/ns/dbchangelog-ext/db2-enhanced http://www.liquibase.org/xml/ns/dbchangelog-ext/db2-enhanced-1.0.xsd">
+
+    <changeSet id="test-basic-1-terminator-disabled" author="test">
+        <db2:db2SqlFile path="./test-basic-end-terminator-1.sql" useSetTerminatorComments="false" />
+    </changeSet>
+
+    <changeSet id="test-reorg-disabled" author="test">
+        <db2:db2SqlFile path="./test-reorg-table.sql" rewriteReorgTableStatements="false"/>
+    </changeSet>
+
+    <changeSet id="test-truncate-table-disabled" author="test">
+        <db2:db2SqlFile path="./test-truncate-table.sql" commitBeforeTruncate="false"/>
+    </changeSet>
+
+</databaseChangeLog>

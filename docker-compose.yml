@@ -1,0 +1,10 @@
+services:
+  db2:
+    image: ibmcom/db2
+    environment:
+      - LICENSE=accept
+      - DBNAME=DB2TEST
+      - DB2INST1_PASSWORD=TESTPA55
+    ports:
+      - "50000:50000"
+    privileged: true
