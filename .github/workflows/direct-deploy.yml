@@ -1,9 +1,9 @@
-name: Release
+name: Direct deploy branch or tag
 on:
   workflow_dispatch:
     inputs:
       branch:
-        description: 'Branch to release (defaults to main)'
+        description: 'Branch or tag to deploy (defaults to main)'
         required: true
         default: 'main'
 
@@ -24,12 +24,8 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
-      - name: Configure Git User
-        run: |
-          git config user.email "actions@github.com"
-          git config user.name "GitHub Actions"
       - name: Prepare and perform release with maven
-        run: mvn -B -DtagNameFormat=v@{version} -DreleaseProfiles=gpg-sign -Darguments="-Dmaven.deploy.skip=true" release:prepare release:perform
+        run: mvn -B clean deploy -Pgpg-sign
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
