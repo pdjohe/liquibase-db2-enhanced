@@ -16,6 +16,10 @@ import liquibase.util.StringUtil;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * The 'db2SqlFile' is an extension that parses DB2 SQL files a bit better.
+ * (For example '--#SET TERMINATOR @' which will switch the delimiter within the script)
+ */
 @DatabaseChange(name = "db2SqlFile",
         description = "The 'db2SqlFile' is an extension that parses DB2 SQL files a bit better\n" +
                 "(For example '--#SET TERMINATOR @' which will switch the delimiter within the script)\n",
@@ -32,6 +36,11 @@ public class Db2SQLFileChange extends SQLFileChange {
 
     private boolean commitBeforeTruncate = true;
 
+    /**
+     * If true, 'REORG TABLE X' will be re-written to be a ADMIN_CMD so that the JDBC driver can execute it.
+     *
+     * @return Boolean, Liquibase requires a Boolean, but this will never be null
+     */
     @DatabaseChangeProperty(description = "If true, 'REORG TABLE X' will be re-written to be a ADMIN_CMD " +
             "so that the JDBC driver can execute it. " +
             "Default is true.")
@@ -39,27 +48,50 @@ public class Db2SQLFileChange extends SQLFileChange {
         return rewriteReorgTableStatements;
     }
 
+    /**
+     * @see #isRewriteReorgTableStatements()
+     * @param rewriteReorgTableStatements if null, this defaults to true
+     */
     public void setRewriteReorgTableStatements(Boolean rewriteReorgTableStatements) {
         this.rewriteReorgTableStatements = Optional.ofNullable(rewriteReorgTableStatements).orElse(true);
     }
 
+    /**
+     * If true, when 'TRUNCATE TABLE ...' is found but missing a COMMIT just before it, COMMIT will be automatically
+     * added just before the truncate table command.
+     *
+     * @return Boolean, Liquibase requires a Boolean, but this will never be null
+     */
     @DatabaseChangeProperty(description = "If true, when 'TRUNCATE TABLE ...' is found but missing a COMMIT " +
-            "just before it, COMMIT will automatically added just before the truncate table command. " +
+            "just before it, COMMIT will be automatically added just before the truncate table command. " +
             "Default is true.")
     public Boolean isCommitBeforeTruncate() {
         return commitBeforeTruncate;
     }
 
+    /**
+     * @see #isCommitBeforeTruncate()
+     * @param commitBeforeTruncate if null, this defaults to true
+     */
     public void setCommitBeforeTruncate(Boolean commitBeforeTruncate) {
         this.commitBeforeTruncate = Optional.ofNullable(commitBeforeTruncate).orElse(true);
     }
 
+    /**
+     * If true, --#SET TERMINATOR comments will be properly executed.
+     *
+     * @return Boolean, Liquibase requires a Boolean, but this will never be null
+     */
     @DatabaseChangeProperty(description = "If true, --#SET TERMINATOR comments will be properly executed." +
             "Default is true.")
     public Boolean isUseSetTerminatorComments() {
         return useSetTerminatorComments;
     }
 
+    /**
+     * @see #isUseSetTerminatorComments()
+     * @param useSetTerminatorComments if null, this defaults to true
+     */
     public void setUseSetTerminatorComments(Boolean useSetTerminatorComments) {
         this.useSetTerminatorComments = Optional.ofNullable(useSetTerminatorComments).orElse(true);
     }
