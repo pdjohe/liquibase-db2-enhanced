@@ -25,9 +25,9 @@ jobs:
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Configure Git User
-          run: |
-            git config user.email "actions@github.com"
-            git config user.name "GitHub Actions"
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
       - name: Prepare and perform release with maven
         run: mvn -B -DtagNameFormat=v@{version} -DreleaseProfiles=gpg-sign -Darguments="-Dmaven.deploy.skip=true" release:prepare release:perform
         env:
