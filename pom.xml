@@ -29,7 +29,7 @@
     </developers>
     <scm>
         <connection>scm:git:git@github.com:pdjohe/liquibase-db2-enhanced.git</connection>
-        <developerConnection>scm:git:ssh://github.com:pdjohe/liquibase-db2-enhanced.git</developerConnection>
+        <developerConnection>scm:git:git@github.com:pdjohe/liquibase-db2-enhanced.git</developerConnection>
         <url>https://github.com/pdjohe/liquibase-db2-enhanced</url>
     </scm>
     <distributionManagement>
