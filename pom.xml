@@ -12,7 +12,7 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <liquibase.version>4.6.1</liquibase.version>
-        <junit.version>5.8.1</junit.version>
+        <junit.version>5.8.2</junit.version>
         <slj4j.version>1.7.32</slj4j.version>
     </properties>
     <licenses>
