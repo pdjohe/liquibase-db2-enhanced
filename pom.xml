@@ -11,7 +11,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <liquibase.version>4.6.1</liquibase.version>
+        <liquibase.version>4.6.2</liquibase.version>
         <junit.version>5.8.2</junit.version>
         <slj4j.version>1.7.32</slj4j.version>
     </properties>
@@ -63,7 +63,7 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>1.27</version>
+            <version>1.29</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -109,7 +109,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.6</version>
+            <version>1.2.7</version>
             <scope>test</scope>
         </dependency>
 
