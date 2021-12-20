@@ -18,4 +18,8 @@
         <db2:db2SqlFile path="./test-truncate-table.sql" commitBeforeTruncate="false"/>
     </changeSet>
 
+    <changeSet id="test-all-dbms-output-disabled" author="test">
+        <db2:db2SqlFile path="./test-dbms-output.sql" disableAllDbmsOutput="true"/>
+    </changeSet>
+
 </databaseChangeLog>

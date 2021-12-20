@@ -20,26 +20,31 @@ class Db2SQLFileChangeTest extends AbstractTest {
                 Db2SQLFileChange::isUseSetTerminatorComments,
                 Db2SQLFileChange::isRewriteReorgTableStatements,
                 Db2SQLFileChange::isCommitBeforeTruncate,
+                Db2SQLFileChange::isDisableAllDbmsOutput,
                 Db2SQLFileChange::getPath
         ).containsExactly(
                         true,
                         true,
                         true,
+                        false,
                         path
         );
 
         db2SQLFileChange.setUseSetTerminatorComments(null);
         db2SQLFileChange.setCommitBeforeTruncate(null);
         db2SQLFileChange.setRewriteReorgTableStatements(null);
+        db2SQLFileChange.setDisableAllDbmsOutput(null);
         Assertions.assertThat(db2SQLFileChange).extracting(
                 Db2SQLFileChange::isUseSetTerminatorComments,
                 Db2SQLFileChange::isRewriteReorgTableStatements,
                 Db2SQLFileChange::isCommitBeforeTruncate,
+                Db2SQLFileChange::isDisableAllDbmsOutput,
                 Db2SQLFileChange::getPath
         ).containsExactly(
                 true,
                 true,
                 true,
+                false,
                 path
         );
         db2SQLFileChange.finishInitialization();
@@ -121,6 +126,21 @@ class Db2SQLFileChangeTest extends AbstractTest {
                 .extracting(RawSqlStatement::getSql)
                 .extracting(this::getFirstLine)
                 .doesNotContain("CALL SYSPROC.ADMIN_CMD ('REORG TABLE TEST_REORG')");
+    }
+
+    @Test
+    void testDisabledAllDbmsOutput() throws SetupException {
+        Db2SQLFileChange db2SQLFileChange = new Db2SQLFileChange();
+        db2SQLFileChange.setPath("dbchanges-test-2.xml");
+        db2SQLFileChange.setRewriteReorgTableStatements(false);
+        db2SQLFileChange.finishInitialization();
+        SqlStatement[] statements = db2SQLFileChange.generateStatements(new DB2iDatabase());
+        Assertions.assertThat(statements)
+                .filteredOn(RawSqlStatement.class::isInstance)
+                .extracting(RawSqlStatement.class::cast)
+                .extracting(RawSqlStatement::getSql)
+                .extracting(this::getFirstLine)
+                .doesNotContain("CALL SYSIBMADM.DBMS_OUTPUT.ENABLE(NULL)");
     }
 
     private String getFirstLine(String s) {

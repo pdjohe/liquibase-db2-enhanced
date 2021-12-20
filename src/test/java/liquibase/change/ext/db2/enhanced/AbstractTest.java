@@ -9,6 +9,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 public abstract class AbstractTest {
 
     static {
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
     }
 

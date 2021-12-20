@@ -17,6 +17,7 @@
             <xsd:attribute name="useSetTerminatorComments" type="xsd:boolean"/>
             <xsd:attribute name="rewriteReorgTableStatements" type="xsd:boolean"/>
             <xsd:attribute name="commitBeforeTruncate" type="xsd:boolean"/>
+            <xsd:attribute name="disableAllDbmsOutput" type="xsd:boolean"/>
         </xsd:complexType>
     </xsd:element>
 

@@ -1,5 +1,6 @@
 package liquibase.change.ext.db2.enhanced;
 
+import ch.qos.logback.core.read.CyclicBufferAppender;
 import liquibase.Liquibase;
 import liquibase.Scope;
 import liquibase.change.ChangeFactory;
@@ -13,6 +14,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +25,8 @@ import java.net.Socket;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 class Db2SQLFileChangeITest extends AbstractTest {
 
@@ -130,6 +135,41 @@ class Db2SQLFileChangeITest extends AbstractTest {
             liquibase.validate();
             liquibase.rollback(Integer.MAX_VALUE, "");
         }
+    }
+
+    @Test
+    void onlineTestDbmsOutput() throws SQLException, LiquibaseException {
+        String changeLogFile = "dbchanges-test-dbmsoutput.xml";
+
+        Assumptions.assumeTrue(isDb2StartedLocally(), "DB2 is not running locally (see docker-compose.yml). Skipping online test");
+
+        // create the appender to collect log events
+        CyclicBufferAppender appender = new CyclicBufferAppender();
+        appender.start();
+        ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).addAppender(appender);
+
+        try (Connection connection = DriverManager.getConnection(ONLINE_URL, "DB2INST1", "TESTPA55")) {
+            Database db = DatabaseFactory.getInstance().findCorrectDatabaseImplementation(new JdbcConnection(connection));
+            Liquibase liquibase = new Liquibase(changeLogFile, Scope.getCurrentScope().getResourceAccessor(), db);
+            liquibase.update("");
+            liquibase.validate();
+            liquibase.rollback(Integer.MAX_VALUE, "");
+        }
+
+        // Extract log events and remove appender
+        List<String> messages = new ArrayList<>();
+        for (int i = 0; i < appender.getLength(); i++) {
+            messages.add(((ch.qos.logback.classic.spi.LoggingEvent) appender.get(i)).getMessage());
+        }
+        appender.stop();
+        ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).detachAppender(appender);
+
+        Assertions.assertThat(messages)
+                .contains(
+                    "In line call using dbms output",
+                    "This is some text from DBMS_OUTPUT called from within a procedure"
+                 )
+                .doesNotContain("In line call when output is disabled");
     }
 
     private static boolean isDb2StartedLocally() {

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:db2="http://www.liquibase.org/xml/ns/dbchangelog-ext/db2-enhanced"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.6.xsd
+                            http://www.liquibase.org/xml/ns/dbchangelog-ext/db2-enhanced http://www.liquibase.org/xml/ns/dbchangelog-ext/db2-enhanced-1.0.xsd">
+
+    <changeSet id="test-dbms-output-01" author="test">
+        <db2:db2SqlFile path="./test-dbms-output.sql"/>
+        <rollback>
+            <db2:db2SqlFile path="./test-dbms-output-rollback.sql"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

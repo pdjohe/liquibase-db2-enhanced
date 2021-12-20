@@ -6,8 +6,13 @@ import liquibase.change.DatabaseChange;
 import liquibase.change.DatabaseChangeProperty;
 import liquibase.change.core.SQLFileChange;
 import liquibase.database.Database;
+import liquibase.database.core.DB2Database;
 import liquibase.exception.DatabaseException;
+import liquibase.executor.Executor;
+import liquibase.executor.ExecutorService;
+import liquibase.executor.jvm.JdbcExecutor;
 import liquibase.logging.Logger;
+import liquibase.snapshot.JdbcDatabaseSnapshot;
 import liquibase.statement.SqlStatement;
 import liquibase.statement.core.RawSqlStatement;
 import liquibase.util.SqlParser;
@@ -35,6 +40,8 @@ public class Db2SQLFileChange extends SQLFileChange {
     private boolean rewriteReorgTableStatements = true;
 
     private boolean commitBeforeTruncate = true;
+
+    private boolean disableAllDbmsOutput = false;
 
     /**
      * If true, 'REORG TABLE X' will be re-written to be a ADMIN_CMD so that the JDBC driver can execute it.
@@ -96,6 +103,24 @@ public class Db2SQLFileChange extends SQLFileChange {
         this.useSetTerminatorComments = Optional.ofNullable(useSetTerminatorComments).orElse(true);
     }
 
+    /**
+     * If true, even if DBMS OUTPUT is turned on in scripts, it will be ignored.
+     *
+     * @return Boolean, Liquibase requires a Boolean, but this will never be null
+     */
+    @DatabaseChangeProperty(description = "If true, DBMS OUTPUT will be ignored." +
+            "Default is true.")
+    public Boolean isDisableAllDbmsOutput() {
+        return disableAllDbmsOutput;
+    }
+
+    /**
+     * @see #isUseSetTerminatorComments()
+     * @param disableAllDbmsOutput if null, this defaults to false
+     */
+    public void setDisableAllDbmsOutput(Boolean disableAllDbmsOutput) {
+        this.disableAllDbmsOutput = Optional.ofNullable(disableAllDbmsOutput).orElse(false);
+    }
     public String getSerializedObjectNamespace() {
         return GENERIC_CHANGELOG_EXTENSION_NAMESPACE;
     }
@@ -111,6 +136,31 @@ public class Db2SQLFileChange extends SQLFileChange {
 
         List<DelimitedSegment> segments = getDelimitedSegments(sql);
         List<SqlStatement> returnStatements = getSqlStatements(database, segments);
+
+        if (database instanceof DB2Database && ! isDisableAllDbmsOutput()) {
+            Executor currentExecutor = Scope.getCurrentScope().getSingleton(ExecutorService.class).getExecutor("jdbc", database);
+
+            boolean isDbmsOutput = returnStatements.stream()
+                    .filter(RawSqlStatement.class::isInstance)
+                    .map(RawSqlStatement.class::cast)
+                    .map(RawSqlStatement::getSql)
+                    .map(s -> s.contains("DBMS_OUTPUT.ENABLE"))
+                    .filter(Boolean.TRUE::equals)
+                    .findAny()
+                    .orElse(false);
+
+            boolean isDbmsOutputExecutorInstalled = currentExecutor instanceof DbmsOutputExecutor;
+
+            if (isDbmsOutput && !isDbmsOutputExecutorInstalled) {
+                getLogger().fine("Enabling DbmsOutputExecutor");
+                DbmsOutputExecutor dbmsOutputExecutor = new DbmsOutputExecutor();
+                dbmsOutputExecutor.setDatabase(database);
+                dbmsOutputExecutor.setResourceAccessor(Scope.getCurrentScope().getResourceAccessor());
+                Scope.getCurrentScope().getSingleton(ExecutorService.class).setExecutor("jdbc", database, dbmsOutputExecutor);
+            } else if (isDbmsOutputExecutorInstalled) {
+                ((DbmsOutputExecutor)currentExecutor).setDbmsOutputEnabled(isDbmsOutput);
+            }
+        }
 
         return returnStatements.toArray(new SqlStatement[0]);
     }
@@ -162,6 +212,16 @@ public class Db2SQLFileChange extends SQLFileChange {
     private String refactorForJdbc(String statement, List<SqlStatement> sqlStatements) {
         if (isRewriteReorgTableStatements() && statement.startsWith(REORG_TABLE_COMMAND)) {
             return "CALL SYSPROC.ADMIN_CMD ('REORG TABLE "+statement.substring(REORG_TABLE_COMMAND.length())+"')";
+        } else if (statement.startsWith("SET SERVEROUTPUT ON")) {
+            if (isDisableAllDbmsOutput()) {
+                return "--" + statement;
+            }
+            return "CALL SYSIBMADM.DBMS_OUTPUT.ENABLE(NULL)";
+        } else if (statement.startsWith("SET SERVEROUTPUT OFF")) {
+            if (isDisableAllDbmsOutput()) {
+                return "--" + statement;
+            }
+            return "CALL SYSIBMADM.DBMS_OUTPUT.DISABLE()";
         }
         int size = sqlStatements.size();
         if (isCommitBeforeTruncate() && size > 0 && statement.contains("TRUNCATE TABLE ")) {
