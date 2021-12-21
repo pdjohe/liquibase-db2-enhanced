@@ -17,14 +17,29 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This executor tries to get the output from DBMS_OUTPUT after each statement execution
+ *
+ * @since 1.1
+ */
 public class DbmsOutputExecutor extends JdbcExecutor {
 
     private boolean isDbmsOutputEnabled = true;
 
+    /**
+     * Simple flag indicating if DBMS_OUTPUT is currently enabled
+     *
+     * @return boolean, default is true
+     */
     public boolean isDbmsOutputEnabled() {
         return isDbmsOutputEnabled;
     }
 
+    /**
+     * Simple flag to turn on and off retrieving DBMS_OUTPUT
+     *
+     * @param isDbmsOutputEnabled, default is true
+     */
     public void setDbmsOutputEnabled(boolean isDbmsOutputEnabled) {
         this.isDbmsOutputEnabled = isDbmsOutputEnabled;
     }
@@ -68,6 +83,7 @@ public class DbmsOutputExecutor extends JdbcExecutor {
         List<String> ret = new ArrayList<>();
 
         while(true) {
+            // GET_LINES does not appear to work, so just use GET_LINE
             try (CallableStatement stmt = ((JdbcConnection) con).getUnderlyingConnection().prepareCall("{ CALL SYSIBMADM.DBMS_OUTPUT.GET_LINE(?,?) }")) {
                 stmt.registerOutParameter(1, Types.VARCHAR);
                 stmt.registerOutParameter(2, Types.INTEGER);

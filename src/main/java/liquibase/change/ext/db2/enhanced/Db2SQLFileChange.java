@@ -10,9 +10,7 @@ import liquibase.database.core.DB2Database;
 import liquibase.exception.DatabaseException;
 import liquibase.executor.Executor;
 import liquibase.executor.ExecutorService;
-import liquibase.executor.jvm.JdbcExecutor;
 import liquibase.logging.Logger;
-import liquibase.snapshot.JdbcDatabaseSnapshot;
 import liquibase.statement.SqlStatement;
 import liquibase.statement.core.RawSqlStatement;
 import liquibase.util.SqlParser;
@@ -104,23 +102,24 @@ public class Db2SQLFileChange extends SQLFileChange {
     }
 
     /**
-     * If true, even if DBMS OUTPUT is turned on in scripts, it will be ignored.
+     * If true, even if DBMS_OUTPUT is turned on in scripts, it will be ignored.
      *
      * @return Boolean, Liquibase requires a Boolean, but this will never be null
      */
-    @DatabaseChangeProperty(description = "If true, DBMS OUTPUT will be ignored." +
-            "Default is true.")
+    @DatabaseChangeProperty(description = "If true, DBMS_OUTPUT will be ignored." +
+            "Default is false.")
     public Boolean isDisableAllDbmsOutput() {
         return disableAllDbmsOutput;
     }
 
     /**
-     * @see #isUseSetTerminatorComments()
+     * @see #isDisableAllDbmsOutput()
      * @param disableAllDbmsOutput if null, this defaults to false
      */
     public void setDisableAllDbmsOutput(Boolean disableAllDbmsOutput) {
         this.disableAllDbmsOutput = Optional.ofNullable(disableAllDbmsOutput).orElse(false);
     }
+
     public String getSerializedObjectNamespace() {
         return GENERIC_CHANGELOG_EXTENSION_NAMESPACE;
     }
@@ -137,30 +136,7 @@ public class Db2SQLFileChange extends SQLFileChange {
         List<DelimitedSegment> segments = getDelimitedSegments(sql);
         List<SqlStatement> returnStatements = getSqlStatements(database, segments);
 
-        if (database instanceof DB2Database && ! isDisableAllDbmsOutput()) {
-            Executor currentExecutor = Scope.getCurrentScope().getSingleton(ExecutorService.class).getExecutor("jdbc", database);
-
-            boolean isDbmsOutput = returnStatements.stream()
-                    .filter(RawSqlStatement.class::isInstance)
-                    .map(RawSqlStatement.class::cast)
-                    .map(RawSqlStatement::getSql)
-                    .map(s -> s.contains("DBMS_OUTPUT.ENABLE"))
-                    .filter(Boolean.TRUE::equals)
-                    .findAny()
-                    .orElse(false);
-
-            boolean isDbmsOutputExecutorInstalled = currentExecutor instanceof DbmsOutputExecutor;
-
-            if (isDbmsOutput && !isDbmsOutputExecutorInstalled) {
-                getLogger().fine("Enabling DbmsOutputExecutor");
-                DbmsOutputExecutor dbmsOutputExecutor = new DbmsOutputExecutor();
-                dbmsOutputExecutor.setDatabase(database);
-                dbmsOutputExecutor.setResourceAccessor(Scope.getCurrentScope().getResourceAccessor());
-                Scope.getCurrentScope().getSingleton(ExecutorService.class).setExecutor("jdbc", database, dbmsOutputExecutor);
-            } else if (isDbmsOutputExecutorInstalled) {
-                ((DbmsOutputExecutor)currentExecutor).setDbmsOutputEnabled(isDbmsOutput);
-            }
-        }
+        doDbmsOutput(database, returnStatements);
 
         return returnStatements.toArray(new SqlStatement[0]);
     }
@@ -240,6 +216,33 @@ public class Db2SQLFileChange extends SQLFileChange {
                 .map(Objects::toString)
                 .collect(Collectors.joining())
                 .isEmpty();
+    }
+
+    private void doDbmsOutput(Database database, List<SqlStatement> returnStatements) {
+        if (database instanceof DB2Database && ! isDisableAllDbmsOutput()) {
+            Executor currentExecutor = Scope.getCurrentScope().getSingleton(ExecutorService.class).getExecutor("jdbc", database);
+
+            boolean isDbmsOutputEnabledInScript = returnStatements.stream()
+                    .filter(RawSqlStatement.class::isInstance)
+                    .map(RawSqlStatement.class::cast)
+                    .map(RawSqlStatement::getSql)
+                    .map(s -> s.contains("DBMS_OUTPUT.ENABLE"))
+                    .filter(Boolean.TRUE::equals)
+                    .findAny()
+                    .orElse(false);
+
+            boolean isDbmsOutputExecutorInstalled = currentExecutor instanceof DbmsOutputExecutor;
+
+            if (isDbmsOutputEnabledInScript && !isDbmsOutputExecutorInstalled) {
+                getLogger().fine("Enabling DbmsOutputExecutor");
+                DbmsOutputExecutor dbmsOutputExecutor = new DbmsOutputExecutor();
+                dbmsOutputExecutor.setDatabase(database);
+                dbmsOutputExecutor.setResourceAccessor(Scope.getCurrentScope().getResourceAccessor());
+                Scope.getCurrentScope().getSingleton(ExecutorService.class).setExecutor("jdbc", database, dbmsOutputExecutor);
+            } else if (isDbmsOutputExecutorInstalled) {
+                ((DbmsOutputExecutor)currentExecutor).setDbmsOutputEnabled(isDbmsOutputEnabledInScript);
+            }
+        }
     }
 
     private Logger getLogger() {

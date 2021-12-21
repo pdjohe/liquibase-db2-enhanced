@@ -1,5 +1,6 @@
 package liquibase.change.ext.db2.enhanced;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.CyclicBufferAppender;
 import liquibase.Liquibase;
 import liquibase.Scope;
@@ -144,7 +145,7 @@ class Db2SQLFileChangeITest extends AbstractTest {
         Assumptions.assumeTrue(isDb2StartedLocally(), "DB2 is not running locally (see docker-compose.yml). Skipping online test");
 
         // create the appender to collect log events
-        CyclicBufferAppender appender = new CyclicBufferAppender();
+        CyclicBufferAppender<ILoggingEvent> appender = new CyclicBufferAppender<>();
         appender.start();
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).addAppender(appender);
 
@@ -159,7 +160,7 @@ class Db2SQLFileChangeITest extends AbstractTest {
         // Extract log events and remove appender
         List<String> messages = new ArrayList<>();
         for (int i = 0; i < appender.getLength(); i++) {
-            messages.add(((ch.qos.logback.classic.spi.LoggingEvent) appender.get(i)).getMessage());
+            messages.add(appender.get(i).getMessage());
         }
         appender.stop();
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)).detachAppender(appender);
