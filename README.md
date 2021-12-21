@@ -5,7 +5,7 @@ This DB2 enhancement contains an SQL file parser which is able to handle SQL fil
 * Properly handle DB2's `--#SET TERMINATOR ` tag which can switch the line terminator in the middle of a script.
 * Issues a `commit` if there is a commit missing before `TRUNCATE TABLE` to avoid the error 'The SQL statement is only allowed as the first statement in a unit of work. SQLCODE=-428, SQLSTATE=25001, ...'
 * Re-writes `REORG TABLE` commands to an `ADMIN_CMD` so that a JDBC driver will properly execute it
-* Discovers if DBMSOUTPUT is enabled in the scripts, and forwards output to logging.
+* Discovers `DBMS_OUTPUT.ENABLE` statements in the scripts, and forwards output to logging.
 
 # Usage
 
