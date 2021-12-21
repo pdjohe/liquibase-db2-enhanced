@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.github.pdjohe</groupId>
     <artifactId>liquibase-db2-enhanced</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.1</version>
     <name>${project.groupId}:${project.artifactId}</name>
     <description>DB2 enhancements for liquibase</description>
     <url>https://github.com/pdjohe/liquibase-db2-enhanced</url>
