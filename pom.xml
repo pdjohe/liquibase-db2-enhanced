@@ -13,7 +13,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <liquibase.version>4.16.0</liquibase.version>
         <junit.version>5.9.1</junit.version>
-        <slj4j.version>2.0.0</slj4j.version>
+        <slj4j.version>2.0.6</slj4j.version>
     </properties>
     <licenses>
         <license>
