@@ -11,7 +11,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <liquibase.version>4.20.0</liquibase.version>
+        <liquibase.version>4.21.1</liquibase.version>
         <junit.version>5.9.2</junit.version>
         <slj4j.version>2.0.6</slj4j.version>
     </properties>
